@@ -8,7 +8,7 @@ Framez is a modern mobile social application built with React Native and Expo, a
 - 📝 **Posts**: Create and share posts with text and/or images
 - 🏠 **Feed**: View all posts from all users in chronological order
 - 👤 **Profile**: View your profile with all your posts
-- 🎨 **Instagram-inspired UI**: Clean and modern design
+- 🎨 **Instagram-inspired UI**: Clean and modern designs
 - ⚡ **Real-time Updates**: Posts update in real-time using Supabase subscriptions
 
 ## Tech Stack
