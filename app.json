@@ -9,27 +9,44 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
+
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.framez.app"
+      "bundleIdentifier": "com.framez.app",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Framez needs access to your photo library to upload images in posts.",
+        "NSCameraUsageDescription": "Framez needs access to your camera to take or upload profile and post pictures."
+      }
     },
+
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#ffffff"
       },
-      "package": "com.framez.app"
+      "package": "law.framez.app",
+      "permissions": [
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "CAMERA",
+        "RECORD_AUDIO"
+      ]
     },
+
     "plugins": [
       [
         "expo-image-picker",
         {
-          "photosPermission": "The app accesses your photos to let you share them in posts."
+          "photosPermission": "Framez needs access to your photos to upload images to your posts."
         }
-      ]
-    ]
+      ],
+      "expo-secure-store"
+    ],
+
+    "extra": {
+      "eas": {
+        "projectId": "740b993f-9e40-43e3-a702-f5f6cb947402"
+      }
+    }
   }
 }
-

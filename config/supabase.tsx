@@ -1,66 +1,54 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from "@supabase/supabase-js";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// Ensure these env vars are set in Expo: EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY
-const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://atceofuytcveppcojsop.supabase.co';
-const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
+// ✅ Pull from Expo env (works for web + mobile)
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL!;
+const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
 
+
+
+// 🔹 Warn clearly if missing (so you notice during Vercel build)
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  console.warn('Supabase URL or ANON KEY is not configured. Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY in your .env');
+  console.error(
+    "❌ Missing Supabase environment variables. Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY in .env or Vercel settings."
+  );
 }
 
-// AsyncStorage adapter for Supabase Auth (React Native)
-const AsyncStorageAdapter = {
-  getItem: async (key: string) => {
-    try {
-      const value = await AsyncStorage.getItem(key);
-      return value;
-    } catch (e) {
-      console.warn('AsyncStorage getItem error', e);
-      return null;
-    }
-  },
-  setItem: async (key: string, value: string) => {
-    try {
-      await AsyncStorage.setItem(key, value);
-    } catch (e) {
-      console.warn('AsyncStorage setItem error', e);
-    }
-  },
-  removeItem: async (key: string) => {
-    try {
-      await AsyncStorage.removeItem(key);
-    } catch (e) {
-      console.warn('AsyncStorage removeItem error', e);
-    }
-  },
-};
+// 🔹 Use proper storage depending on platform
+const isWeb = typeof window !== "undefined";
 
-// Create Supabase client
-export const supabase: SupabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+const storage = isWeb
+  ? undefined // Supabase web SDK uses localStorage automatically
+  : {
+      getItem: async (key: string) => AsyncStorage.getItem(key),
+      setItem: async (key: string, value: string) => AsyncStorage.setItem(key, value),
+      removeItem: async (key: string) => AsyncStorage.removeItem(key),
+    };
+
+// 🔹 Create client (v2 syntax)
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
-    // @ts-ignore - supabase-js types don't yet include react-native storage adapter typing in some versions
-    storage: AsyncStorageAdapter,
-    detectSessionInUrl: false,
+    storage,
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true, // Required for web email magic link and redirects
   },
   global: {
-    headers: {
-      'x-client-info': 'framez-app',
-    },
+    headers: { "x-client-info": "framez-app" },
   },
 });
 
-// Utility to check if bucket exists (used by upload logic)
+// ✅ Utility: check if storage bucket exists
 export async function bucketExists(bucketName: string): Promise<boolean> {
   try {
     const { data, error } = await supabase.storage.listBuckets();
     if (error) {
-      console.warn('Error listing buckets', error);
+      console.warn("Error listing buckets:", error.message);
       return false;
     }
-    return Array.isArray(data) && data.some((b: any) => b.name === bucketName);
-  } catch (e) {
-    console.warn('bucketExists exception', e);
+    return data?.some((b) => b.name === bucketName) ?? false;
+  } catch (err) {
+    console.error("bucketExists exception:", err);
     return false;
   }
 }

@@ -1,192 +1,146 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
-  Text,
   FlatList,
-  StyleSheet,
   RefreshControl,
-  Image,
-  TouchableOpacity,
   Alert,
+  ActivityIndicator,
+  StyleSheet,
+  Text,
 } from 'react-native';
-import { supabase } from '../config/supabase';
+import { supabase } from '@config/supabase';
 import { useAuth } from '../context/AuthContext';
-import { Ionicons } from '@expo/vector-icons';
 import PostCard from '../components/PostCard';
+import { Ionicons } from '@expo/vector-icons';
 
 const FeedScreen = () => {
-  const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const { user } = useAuth();
+  const [posts, setPosts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  /**
+   * Fetch posts from Supabase
+   */
+  const fetchPosts = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+  .from('posts')
+  .select(`
+    id,
+    content,
+    image_url,
+    created_at,
+    user_id,
+    profiles (
+      full_name,
+      avatar_url
+    )
+  `)
+  .order('created_at', { ascending: false });
+
+
+      if (error) throw error;
+
+      setPosts(data || []);
+    } catch (error: any) {
+      console.error('❌ Error fetching posts:', error.message);
+      Alert.alert('Error', 'Failed to load posts.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     fetchPosts();
-    
-    // Subscribe to real-time updates
-    const subscription = supabase
-      .channel('posts')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'posts',
-        },
-        () => {
-          fetchPosts();
-        }
-      )
-      .subscribe();
+  }, [fetchPosts]);
 
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  const fetchPosts = async () => {
-    try {
-      // First, fetch all posts
-      const { data: postsData, error: postsError } = await supabase
-        .from('posts')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (postsError) {
-        console.error('Error fetching posts:', postsError);
-        throw postsError;
-      }
-
-      if (!postsData || postsData.length === 0) {
-        setPosts([]);
-        setLoading(false);
-        setRefreshing(false);
-        return;
-      }
-
-      // Get unique user IDs
-      const userIds = [...new Set(postsData.map(post => post.user_id))];
-
-      // Fetch all profiles
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, full_name, avatar_url, email')
-        .in('id', userIds);
-
-      if (profilesError) {
-        console.error('Error fetching profiles:', profilesError);
-        // Continue even if profiles fail
-      }
-
-      // Create a map of user profiles
-      const profilesMap = {};
-      if (profilesData) {
-        profilesData.forEach(profile => {
-          profilesMap[profile.id] = profile;
-        });
-      }
-
-      // Combine posts with profiles
-      const postsWithProfiles = postsData.map(post => ({
-        ...post,
-        profiles: profilesMap[post.user_id] || null,
-      }));
-
-      setPosts(postsWithProfiles);
-    } catch (error) {
-      console.error('Error fetching posts:', error);
-      if (!refreshing) {
-        Alert.alert('Error', error.message || 'Failed to load posts');
-      }
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  const onRefresh = () => {
+  const onRefresh = async () => {
     setRefreshing(true);
-    fetchPosts();
+    await fetchPosts();
+    setRefreshing(false);
   };
 
-  const formatDate = (dateString) => {
+  /**
+   * ✅ Delete Post Logic
+   */
+  const handleDelete = async (postId: string) => {
+    Alert.alert('Delete Post', 'Are you sure you want to delete this post?', [
+      {
+        text: 'Cancel',
+        style: 'cancel',
+      },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            const { error } = await supabase.from('posts').delete().eq('id', postId);
+            if (error) throw error;
+
+            // Update local state
+            setPosts((prev) => prev.filter((p) => p.id !== postId));
+            Alert.alert('Deleted', 'Post has been removed.');
+          } catch (error: any) {
+            console.error('❌ Error deleting post:', error.message);
+            Alert.alert('Error', error.message || 'Failed to delete post.');
+          }
+        },
+      },
+    ]);
+  };
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return '';
     const date = new Date(dateString);
-    const now = new Date();
-    const diff = now - date;
-    const seconds = Math.floor(diff / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const hours = Math.floor(minutes / 60);
-    const days = Math.floor(hours / 24);
-
-    if (days > 0) return `${days}d ago`;
-    if (hours > 0) return `${hours}h ago`;
-    if (minutes > 0) return `${minutes}m ago`;
-    return 'Just now';
+    return date.toLocaleString();
   };
-
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <Text>Loading posts...</Text>
-      </View>
-    );
-  }
 
   return (
     <View style={styles.container}>
-      <FlatList
-        data={posts}
-        renderItem={({ item }) => (
-          <PostCard
-            post={item}
-            formatDate={formatDate}
-            currentUserId={user?.id}
-          />
-        )}
-        keyExtractor={(item) => item.id.toString()}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Ionicons name="camera-outline" size={64} color="#ccc" />
-            <Text style={styles.emptyText}>No posts yet</Text>
-            <Text style={styles.emptySubtext}>Be the first to share something!</Text>
-          </View>
-        }
-      />
+      {loading ? (
+        <ActivityIndicator size="large" color="#0095f6" style={{ marginTop: 32 }} />
+      ) : posts.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Ionicons name="chatbubbles-outline" size={48} color="#ccc" />
+          <Text style={styles.emptyText}>No posts yet. Start by creating one!</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={posts}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <PostCard
+              post={item}
+              currentUserId={user?.id}
+              onDelete={handleDelete}
+              formatDate={formatDate}
+            />
+          )}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#0095f6" />
+          }
+          contentContainerStyle={{ padding: 8 }}
+        />
+      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  container: { flex: 1, backgroundColor: '#f8f9fa' },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 100,
+    marginTop: 80,
   },
   emptyText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#666',
-    marginTop: 16,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#999',
-    marginTop: 8,
+    marginTop: 12,
+    color: '#888',
+    fontSize: 16,
   },
 });
 
 export default FeedScreen;
-
