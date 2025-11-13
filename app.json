@@ -3,47 +3,16 @@
     "name": "Framez",
     "slug": "framez",
     "version": "1.0.0",
-    "orientation": "portrait",
-    "userInterfaceStyle": "light",
-    "splash": {
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
-    "assetBundlePatterns": ["**/*"],
-
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.framez.app",
-      "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "Framez needs access to your photo library to upload images in posts.",
-        "NSCameraUsageDescription": "Framez needs access to your camera to take or upload profile and post pictures."
+    "android": {
+      "package": "com.lawrence.framez",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
       }
     },
-
-    "android": {
-      "adaptiveIcon": {
-        "backgroundColor": "#ffffff"
-      },
-      "package": "law.framez.app",
-      "permissions": [
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
-        "CAMERA",
-        "RECORD_AUDIO"
-      ]
-    },
-
-    "plugins": [
-      [
-        "expo-image-picker",
-        {
-          "photosPermission": "Framez needs access to your photos to upload images to your posts."
-        }
-      ],
-      "expo-secure-store"
-    ],
-
     "extra": {
+      "supabaseUrl": "https://atceofuytcveppcojsop.supabase.co",
+      "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0Y2VvZnV5dGN2ZXBwY29qc29wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI2MjYxMTcsImV4cCI6MjA3ODIwMjExN30.cMlFCiEhZohzOpBW_7jLoRANc-rNuGSvFai8FsmFOfg",
       "eas": {
         "projectId": "740b993f-9e40-43e3-a702-f5f6cb947402"
       }

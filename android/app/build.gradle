@@ -87,9 +87,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'law.framez.app'
+    namespace 'com.lawrence.framez'
     defaultConfig {
-        applicationId 'law.framez.app'
+        applicationId 'com.lawrence.framez'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

@@ -1,4 +1,4 @@
-package law.framez.app
+package com.lawrence.framez
 
 import android.app.Application
 import android.content.res.Configuration
