@@ -2,6 +2,11 @@
 
 Framez is a modern mobile social application built with React Native and Expo, allowing users to share posts with text and images. The app features user authentication, a real-time feed, and user profiles.
 
+# Demo Details
+Kindly Use
+Username: demo@example.com
+Password: 1234567
+
 ## Features
 
 - 🔐 **Authentication**: Secure sign-up, login, and logout with persistent sessions
